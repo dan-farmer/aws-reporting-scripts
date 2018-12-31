@@ -42,7 +42,8 @@ def main():
         ec2_client = boto3.client('ec2', region_name=region)
         for instance in get_instances(ec2_client):
             output.writerow([region,
-                             instance['InstanceId']])
+                             instance['InstanceId'],
+                             get_instance_name(instance)])
 
 def get_regions():
     """Return list of AWS regions."""
@@ -90,6 +91,20 @@ def get_instances(ec2_client):
         for reservation in instance_list['Reservations']:
             for instance in reservation['Instances']:
                 yield instance
+
+def get_instance_name(instance):
+    """Return instance 'Name' tag value if it exists"""
+    instance_name = ''
+    try:
+        # Looping through tags seems ugly, but no better way in boto3
+        # See https://github.com/boto/boto3/issues/264
+        for tag in instance['Tags']:
+            if tag['Key'] == 'Name':
+                instance_name = tag['Value']
+    except KeyError:
+        # Instance has no tags at all
+        pass
+    return instance_name
 
 if __name__ == '__main__':
     main()
