@@ -38,6 +38,12 @@ def main():
                      'SSMPlatformName',
                      'SSMPlatformVersion'])
 
+    for region in get_regions():
+        ec2_client = boto3.client('ec2', region_name=region)
+        for instance in get_instances(ec2_client):
+            output.writerow([region,
+                             instance['InstanceId']])
+
 def get_regions():
     """Return list of AWS regions."""
     try:
@@ -57,6 +63,33 @@ def get_regions():
         raise err
     for region in region_list:
         yield region['RegionName']
+
+def get_instances(ec2_client):
+    """Yield EC2 instances."""
+    next_token = True
+    filters = {
+        'Name': 'instance-state-name',
+        'Values': [
+            #'pending',
+            'running',
+            #'shutting-down',
+            #'terminated',
+            'stopping',
+            'stopped',
+        ]
+    }
+    while next_token:
+        if next_token is not True:
+            instance_list = ec2_client.describe_instances(Filters=[filters], NextToken=next_token)
+        else:
+            instance_list = ec2_client.describe_instances(Filters=[filters])
+        if 'NextToken' in instance_list:
+            next_token = instance_list['NextToken']
+        else:
+            next_token = False
+        for reservation in instance_list['Reservations']:
+            for instance in reservation['Instances']:
+                yield instance
 
 if __name__ == '__main__':
     main()
