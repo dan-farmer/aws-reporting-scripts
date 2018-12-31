@@ -43,7 +43,8 @@ def main():
         for instance in get_instances(ec2_client):
             output.writerow([region,
                              instance['InstanceId'],
-                             get_instance_name(instance)])
+                             get_instance_name(instance),
+                             get_instance_platform(instance)])
 
 def get_regions():
     """Return list of AWS regions."""
@@ -105,6 +106,15 @@ def get_instance_name(instance):
         # Instance has no tags at all
         pass
     return instance_name
+
+def get_instance_platform(instance):
+    """Return instance Platform value if it exists"""
+    instance_platform = ''
+    try:
+        instance_platform = instance['Platform']
+    except KeyError:
+        pass
+    return instance_platform
 
 if __name__ == '__main__':
     main()
