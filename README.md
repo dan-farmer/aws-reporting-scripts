@@ -24,5 +24,4 @@ By design, these scripts do not handle authentication. Use one of the following 
 
 ## Requirements
 * Python 3
-* botocore - [GitHub](https://github.com/boto/botocore) :: [PyPI](https://pypi.org/project/botocore/)
-* boto3 - [GitHub](https://github.com/boto/boto3) :: [PyPI](https://pypi.org/project/boto3/)
+* Python modules: See [requirements.txt](./requirements.txt)
