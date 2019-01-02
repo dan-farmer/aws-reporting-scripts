@@ -39,7 +39,13 @@ def main():
         cfn_client = boto3.client('cloudformation', region_name=region)
         for stack in get_stacks(cfn_client):
             for resource in get_resources(cfn_client, stack['StackId']):
-                output.writerow([region])
+                output.writerow([region,
+                                 resource['LogicalResourceId'],
+                                 resource['PhysicalResourceId'],
+                                 resource['ResourceType'],
+                                 stack['StackName'],
+                                 stack['StackId'],
+                                 stack['StackStatus']])
 
 def get_stacks(cfn_client):
     """Yield all CloudFormation stacks."""
@@ -76,7 +82,19 @@ def get_stacks(cfn_client):
 
 def get_resources(cfn_client, stack_id):
     """Yield all resources for CloudFormation stack."""
-    return ''
+    next_token = True
+    while next_token:
+        if next_token is not True:
+            resource_list = cfn_client.list_stack_resources(StackName=stack_id,
+                                                            NextToken=next_token)
+        else:
+            resource_list = cfn_client.list_stack_resources(StackName=stack_id)
+        if 'NextToken' in resource_list:
+            next_token = resource_list['NextToken']
+        else:
+            next_token = False
+        for resource in resource_list['StackResourceSummaries']:
+            yield resource
 
 if __name__ == '__main__':
     main()
