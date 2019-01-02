@@ -40,11 +40,18 @@ def main():
 
     for region in get_regions():
         ec2_client = boto3.client('ec2', region_name=region)
+        ssm_client = boto3.client('ssm', region_name=region)
         for instance in get_instances(ec2_client):
+            instance_ssm_info = get_instance_ssm_info(ssm_client, instance['InstanceId'])
             output.writerow([region,
                              instance['InstanceId'],
                              get_instance_name(instance),
-                             get_instance_platform(instance)])
+                             get_instance_platform(instance),
+                             instance_ssm_info[0],
+                             instance_ssm_info[1],
+                             instance_ssm_info[2],
+                             instance_ssm_info[3],
+                             instance_ssm_info[4]])
 
 def get_regions():
     """Return list of AWS regions."""
@@ -94,7 +101,7 @@ def get_instances(ec2_client):
                 yield instance
 
 def get_instance_name(instance):
-    """Return instance 'Name' tag value if it exists"""
+    """Return instance 'Name' tag value if it exists."""
     instance_name = ''
     try:
         # Looping through tags seems ugly, but no better way in boto3
@@ -108,13 +115,27 @@ def get_instance_name(instance):
     return instance_name
 
 def get_instance_platform(instance):
-    """Return instance Platform value if it exists"""
+    """Return instance Platform value if it exists."""
     instance_platform = ''
     try:
         instance_platform = instance['Platform']
     except KeyError:
         pass
     return instance_platform
+
+def get_instance_ssm_info(ssm_client, instance_id):
+    """Return SSM agent details."""
+    ping_status, agent_version, platform_type, platform_name, platform_version = '', '', '', '', ''
+    filters = {'key': 'InstanceIds', 'valueSet': [instance_id]}
+    ssm_information = (ssm_client.describe_instance_information
+                       (InstanceInformationFilterList=[filters])['InstanceInformationList'])
+    if ssm_information:
+        ping_status = ssm_information[0]['PingStatus']
+        agent_version = ssm_information[0]['AgentVersion']
+        platform_type = ssm_information[0]['PlatformType']
+        platform_name = ssm_information[0]['PlatformName']
+        platform_version = ssm_information[0]['PlatformVersion']
+    return ping_status, agent_version, platform_type, platform_name, platform_version
 
 if __name__ == '__main__':
     main()
