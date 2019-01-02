@@ -5,7 +5,8 @@
 #   See the "LICENSE" file for full details
 
 """
-Output to stdout as CSV:
+List SSM Maintenance Windows, Tasks and Patching Baseline details.
+
 - Maintenance Window schedule etc
 - First returned Maintenance Window Task (further tasks are ignored)
   - Basic details
@@ -31,6 +32,7 @@ except ImportError as err:
 
 def main():
     """Gather and write CSV data, one row per Maintenance Window.
+
     Iterate through available AWS regions
     Iterate through all SSM Maintenance Windows
     Query for first Maintenance Window Task
