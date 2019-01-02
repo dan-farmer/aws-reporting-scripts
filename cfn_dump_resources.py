@@ -28,10 +28,10 @@ def main():
 
     # Header row
     output.writerow(['Region',
-                     'LogicalResourceId',
-                     'PhysicalResourceId',
-                     'ResourceType',
                      'StackName',
+                     'LogicalResourceId',
+                     'ResourceType',
+                     'PhysicalResourceId',
                      'StackID',
                      'StackStatus'])
 
@@ -47,10 +47,10 @@ def main():
                     # of CloudFormation
                     physical_resource_id = "[Deleted]"
                 output.writerow([region,
-                                 resource['LogicalResourceId'],
-                                 physical_resource_id,
-                                 resource['ResourceType'],
                                  stack['StackName'],
+                                 resource['LogicalResourceId'],
+                                 resource['ResourceType'],
+                                 physical_resource_id,
                                  stack['StackId'],
                                  stack['StackStatus']])
 
