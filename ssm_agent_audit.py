@@ -10,7 +10,7 @@ import sys
 import csv
 try:
     import boto3
-    import botocore.exceptions
+    from helpers import get_regions
 except ImportError as err:
     print('ERROR: {0}'.format(err), file=sys.stderr)
     raise err
@@ -52,26 +52,6 @@ def main():
                              instance_ssm_info[2],
                              instance_ssm_info[3],
                              instance_ssm_info[4]])
-
-def get_regions():
-    """Return list of AWS regions."""
-    try:
-        ec2_client = boto3.client('ec2')
-    except botocore.exceptions.NoRegionError:
-        # If we fail because the user has no default region, use us-east-1
-        # This is for listing regions only
-        # Iterating resources is then performed in each region
-        ec2_client = boto3.client('ec2', region_name='us-east-1')
-    try:
-        region_list = ec2_client.describe_regions()['Regions']
-    except botocore.exceptions.ClientError as err:
-        # Handle auth errors etc
-        # Note that it is possible for our auth details to expire between this
-        # and any later request; We consider this an acceptable race condition
-        print('ERROR: {0}'.format(err), file=sys.stderr)
-        raise err
-    for region in region_list:
-        yield region['RegionName']
 
 def get_instances(ec2_client):
     """Yield EC2 instances."""
