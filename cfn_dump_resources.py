@@ -39,9 +39,16 @@ def main():
         cfn_client = boto3.client('cloudformation', region_name=region)
         for stack in get_stacks(cfn_client):
             for resource in get_resources(cfn_client, stack['StackId']):
+                try:
+                    physical_resource_id = resource['PhysicalResourceId']
+                except KeyError:
+                    # If a logical resource has no PhysicalResourceId (i.e. ARN), then the
+                    # corresponding physical resource does not exist and has been deleted outside
+                    # of CloudFormation
+                    physical_resource_id = "[Deleted]"
                 output.writerow([region,
                                  resource['LogicalResourceId'],
-                                 resource['PhysicalResourceId'],
+                                 physical_resource_id,
                                  resource['ResourceType'],
                                  stack['StackName'],
                                  stack['StackId'],
