@@ -38,12 +38,41 @@ def main():
     for region in get_regions():
         cfn_client = boto3.client('cloudformation', region_name=region)
         for stack in get_stacks(cfn_client):
-            for resource in get_resources(cfn_client, stack_id):
+            for resource in get_resources(cfn_client, stack['StackId']):
                 output.writerow([region])
 
 def get_stacks(cfn_client):
     """Yield all CloudFormation stacks."""
-    return ''
+    next_token = True
+    stack_status_filter = ['CREATE_IN_PROGRESS',
+                           'CREATE_FAILED',
+                           'CREATE_COMPLETE',
+                           'ROLLBACK_IN_PROGRESS',
+                           'ROLLBACK_FAILED',
+                           'ROLLBACK_COMPLETE',
+                           #'DELETE_IN_PROGRESS',
+                           'DELETE_FAILED',
+                           #'DELETE_COMPLETE',
+                           'UPDATE_IN_PROGRESS',
+                           'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
+                           'UPDATE_COMPLETE',
+                           'UPDATE_ROLLBACK_IN_PROGRESS',
+                           'UPDATE_ROLLBACK_FAILED',
+                           'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
+                           'UPDATE_ROLLBACK_COMPLETE',
+                           'REVIEW_IN_PROGRESS']
+    while next_token:
+        if next_token is not True:
+            stack_list = cfn_client.list_stacks(StackStatusFilter=stack_status_filter,
+                                                NextToken=next_token)
+        else:
+            stack_list = cfn_client.list_stacks(StackStatusFilter=stack_status_filter)
+        if 'NextToken' in stack_list:
+            next_token = stack_list['NextToken']
+        else:
+            next_token = False
+        for stack in stack_list['StackSummaries']:
+            yield stack
 
 def get_resources(cfn_client, stack_id):
     """Yield all resources for CloudFormation stack."""
