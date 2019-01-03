@@ -8,12 +8,8 @@
 
 import sys
 import csv
-try:
-    import boto3
-    from helpers import get_regions
-except ImportError as err:
-    print('ERROR: {0}'.format(err), file=sys.stderr)
-    raise err
+import boto3
+from helpers import get_regions
 
 def main():
     """Gather and write CSV data, one row per Resource.

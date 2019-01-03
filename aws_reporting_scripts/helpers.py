@@ -7,12 +7,8 @@
 """Common functions for aws-reporting-scripts"""
 
 import sys
-try:
-    import boto3
-    import botocore.exceptions
-except ImportError as err:
-    print('ERROR: {0}'.format(err), file=sys.stderr)
-    raise err
+import boto3
+import botocore.exceptions
 
 def get_regions():
     """Return list of AWS regions."""
