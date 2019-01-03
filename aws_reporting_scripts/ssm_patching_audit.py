@@ -69,7 +69,7 @@ def main():
             maint_window_info = get_maint_window_info(ssm_client, maint_window_id)
             task_id = get_maint_window_task(ssm_client, maint_window_id)
             task_info = get_task_info(ssm_client, maint_window_id, task_id)
-            patch_tag = get_target_patch_tag(ssm_client, maint_window_id, task_info[0])
+            patch_tag = get_target_patch_tag(ssm_client, maint_window_id, task_info['target_id'])
             baseline_id = get_baseline_id(ssm_client, patch_tag)
             baseline_info = get_baseline_info(ssm_client, baseline_id)
 
@@ -77,19 +77,19 @@ def main():
             output.writerow([boto3.client('sts').get_caller_identity()['Account'],
                              region,
                              maint_window_id,
-                             maint_window_info[0],  #Name
-                             maint_window_info[1],  #Sched
-                             maint_window_info[2],  #TZ
+                             maint_window_info['name'],
+                             maint_window_info['sched'],
+                             maint_window_info['time_zone'],
                              task_id,               #First returned MW Task ID
-                             patch_tag,             #Patch Group
-                             task_info[1],          #Task
-                             task_info[2],          #Operation
-                             baseline_id,           #Baseline
-                             baseline_info[0],      #Name
-                             baseline_info[1],      #OS
-                             baseline_info[2],      #Patch Filter (MSRC Sev)
-                             baseline_info[3],      #Patch Filter (Class)
-                             baseline_info[4]])     #Approval Delay
+                             patch_tag,
+                             task_info['task'],
+                             task_info['operation'],
+                             baseline_id,
+                             baseline_info['name'],
+                             baseline_info['operating_system'],
+                             baseline_info['filter_msrc_sev'],
+                             baseline_info['filter_class'],
+                             baseline_info['delay']])
 
 def get_maintenance_windows(ssm_client):
     """Yield SSM Maintenance Windows."""
@@ -120,7 +120,7 @@ def get_maint_window_info(ssm_client, maint_window_id):
         time_zone = maint_window['ScheduleTimezone']
     except KeyError:
         pass     #ScheduleTimezone is not set
-    return name, sched, time_zone
+    return {'name': name, 'sched': sched, 'time_zone': time_zone}
 
 def get_maint_window_task(ssm_client, maint_window_id):
     """Return ID of first Maintenance Window Task in Maintenance Window."""
@@ -150,7 +150,7 @@ def get_task_info(ssm_client, maint_window_id, task_id):
                          ['RunCommand']['Parameters']['Operation'][0])
         except (KeyError, IndexError):
             pass    #No 'Operation' parameter or values set for task
-    return target_id, task, operation
+    return {'target_id': target_id, 'task': task, 'operation': operation}
 
 def get_target_patch_tag(ssm_client, maint_window_id, target_id):
     """Return 'Patch Group' tag value of Maintenance Window Target."""
@@ -192,7 +192,11 @@ def get_baseline_info(ssm_client, baseline_id):
         filter_class = ",".join(next(item for item in patch_filters
                                      if item['Key'] == 'CLASSIFICATION')['Values'])
         delay = baseline['ApprovalRules']['PatchRules'][0]['ApproveAfterDays']
-    return name, operating_system, filter_msrc_sev, filter_class, delay
+    return {'name': name,
+            'operating_system': operating_system,
+            'filter_msrc_sev': filter_msrc_sev,     #Patch filter (MSRC severity)
+            'filter_class': filter_class,           #Patch filter (classification)
+            'delay': delay}
 
 if __name__ == '__main__':
     main()
