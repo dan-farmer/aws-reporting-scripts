@@ -23,12 +23,8 @@ List SSM Maintenance Windows, Tasks and Patching Baseline details.
 
 import sys
 import csv
-try:
-    import boto3
-    from helpers import get_regions
-except ImportError as err:
-    print('ERROR: {0}'.format(err), file=sys.stderr)
-    raise err
+import boto3
+from helpers import get_regions
 
 def main():
     """Gather and write CSV data, one row per Maintenance Window.
@@ -43,44 +39,34 @@ def main():
                         quoting=csv.QUOTE_ALL)
 
     # Header row
-    output.writerow(['Account',
-                     'Region',
-                     'MW ID',
-                     'MW Name',
-                     'MW Schedule',
-                     'MW TZ',
-                     'Task 1 ID',
-                     'Patch Group',
-                     'Task',
-                     'Operation',
-                     'Baseline',
-                     'Baseline Name',
-                     'OS',
-                     'Patch Filter (MSRC Sev)',
-                     'Patch Filter (Class)',
-                     'Approval Delay'])
+    output.writerow(['Account', 'Region', 'MW ID', 'MW Name', 'MW Schedule', 'MW TZ', 'Task 1 ID',
+                     'Patch Group', 'Task', 'Operation', 'Baseline', 'Baseline Name', 'OS',
+                     'Patch Filter (MSRC Sev)', 'Patch Filter (Class)', 'Approval Delay'])
 
-    #Iterate through regions and Maintenance Windows
+    # Get AWS account number from STS
+    account_number = boto3.client('sts').get_caller_identity()['Account']
+
+    # Iterate through regions and Maintenance Windows
     for region in get_regions():
         ssm_client = boto3.client('ssm', region_name=region)
         for maint_window_id in get_maintenance_windows(ssm_client):
 
-            #Gather data
+            # Gather data
             maint_window_info = get_maint_window_info(ssm_client, maint_window_id)
-            task_id = get_maint_window_task(ssm_client, maint_window_id)
-            task_info = get_task_info(ssm_client, maint_window_id, task_id)
+            task_1_id = get_maint_window_task_1(ssm_client, maint_window_id)
+            task_info = get_task_info(ssm_client, maint_window_id, task_1_id)
             patch_tag = get_target_patch_tag(ssm_client, maint_window_id, task_info['target_id'])
             baseline_id = get_baseline_id(ssm_client, patch_tag)
             baseline_info = get_baseline_info(ssm_client, baseline_id)
 
-            #Output data
-            output.writerow([boto3.client('sts').get_caller_identity()['Account'],
+            # Output data
+            output.writerow([account_number,
                              region,
                              maint_window_id,
                              maint_window_info['name'],
                              maint_window_info['sched'],
                              maint_window_info['time_zone'],
-                             task_id,               #First returned MW Task ID
+                             task_1_id,
                              patch_tag,
                              task_info['task'],
                              task_info['operation'],
@@ -119,20 +105,20 @@ def get_maint_window_info(ssm_client, maint_window_id):
     try:
         time_zone = maint_window['ScheduleTimezone']
     except KeyError:
-        pass     #ScheduleTimezone is not set
+        pass    # ScheduleTimezone is not set
     return {'name': name, 'sched': sched, 'time_zone': time_zone}
 
-def get_maint_window_task(ssm_client, maint_window_id):
+def get_maint_window_task_1(ssm_client, maint_window_id):
     """Return ID of first Maintenance Window Task in Maintenance Window."""
-    task_id = ''
+    task_1_id = ''
     task_list = ssm_client.describe_maintenance_window_tasks(
         WindowId=maint_window_id,
         MaxResults=10)
     try:
-        task_id = task_list['Tasks'][0]['WindowTaskId']
+        task_1_id = task_list['Tasks'][0]['WindowTaskId']
     except IndexError:
-        pass    #No Task exists for this Maintenance Window
-    return task_id
+        pass    # No Task exists for this Maintenance Window
+    return task_1_id
 
 def get_task_info(ssm_client, maint_window_id, task_id):
     """Return Target ID, Task and Operation of Maintenance Window Task."""
@@ -149,7 +135,7 @@ def get_task_info(ssm_client, maint_window_id, task_id):
             operation = (maint_window_task['TaskInvocationParameters']
                          ['RunCommand']['Parameters']['Operation'][0])
         except (KeyError, IndexError):
-            pass    #No 'Operation' parameter or values set for task
+            pass    # No 'Operation' parameter or values set for task
     return {'target_id': target_id, 'task': task, 'operation': operation}
 
 def get_target_patch_tag(ssm_client, maint_window_id, target_id):
@@ -162,12 +148,12 @@ def get_target_patch_tag(ssm_client, maint_window_id, target_id):
                 WindowId=maint_window_id,
                 Filters=[filters])
         except KeyError:
-            pass    #No targets
+            pass    # No targets
         try:
             patch_tag = next(item for item in target_list['Targets'][0]['Targets']
                              if item['Key'] == 'tag:Patch Group')['Values'][0]
         except (KeyError, IndexError):
-            pass    #No 'Patch Group' tag
+            pass    # No 'Patch Group' tag
     return patch_tag
 
 def get_baseline_id(ssm_client, patch_tag):
@@ -194,8 +180,8 @@ def get_baseline_info(ssm_client, baseline_id):
         delay = baseline['ApprovalRules']['PatchRules'][0]['ApproveAfterDays']
     return {'name': name,
             'operating_system': operating_system,
-            'filter_msrc_sev': filter_msrc_sev,     #Patch filter (MSRC severity)
-            'filter_class': filter_class,           #Patch filter (classification)
+            'filter_msrc_sev': filter_msrc_sev,     # Patch filter (MSRC severity)
+            'filter_class': filter_class,           # Patch filter (classification)
             'delay': delay}
 
 if __name__ == '__main__':

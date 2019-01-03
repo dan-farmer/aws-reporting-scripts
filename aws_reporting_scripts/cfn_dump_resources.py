@@ -8,12 +8,8 @@
 
 import sys
 import csv
-try:
-    import boto3
-    from helpers import get_regions
-except ImportError as err:
-    print('ERROR: {0}'.format(err), file=sys.stderr)
-    raise err
+import boto3
+from helpers import get_regions
 
 def main():
     """Gather and write CSV data, one row per Resource.
@@ -27,13 +23,8 @@ def main():
     output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
 
     # Header row
-    output.writerow(['Region',
-                     'StackName',
-                     'LogicalResourceId',
-                     'ResourceType',
-                     'PhysicalResourceId',
-                     'StackID',
-                     'StackStatus'])
+    output.writerow(['Region', 'StackName', 'LogicalResourceId', 'ResourceType',
+                     'PhysicalResourceId', 'StackID', 'StackStatus'])
 
     for region in get_regions():
         cfn_client = boto3.client('cloudformation', region_name=region)

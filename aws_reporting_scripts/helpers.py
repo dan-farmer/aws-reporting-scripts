@@ -7,12 +7,8 @@
 """Common functions for aws-reporting-scripts"""
 
 import sys
-try:
-    import boto3
-    import botocore.exceptions
-except ImportError as err:
-    print('ERROR: {0}'.format(err), file=sys.stderr)
-    raise err
+import boto3
+import botocore.exceptions
 
 def get_regions():
     """Return list of AWS regions."""
@@ -27,8 +23,8 @@ def get_regions():
         region_list = ec2_client.describe_regions()['Regions']
     except botocore.exceptions.ClientError as err:
         # Handle auth errors etc
-        # Note that it is possible for our auth details to expire between this
-        # and any later request; We consider this an acceptable race condition
+        # It is possible for our auth details to expire between this and any later request;
+        # We consider this an acceptable race condition
         print('ERROR: {0}'.format(err), file=sys.stderr)
         sys.exit(10)
     for region in region_list:

@@ -8,12 +8,8 @@
 
 import sys
 import csv
-try:
-    import boto3
-    from helpers import get_regions
-except ImportError as err:
-    print('ERROR: {0}'.format(err), file=sys.stderr)
-    raise err
+import boto3
+from helpers import get_regions
 
 def main():
     """Gather and write CSV data, one row per Instance.
@@ -28,14 +24,8 @@ def main():
                         quoting=csv.QUOTE_ALL)
 
     # Header row
-    output.writerow(['Region',
-                     'InstanceID',
-                     'Name',
-                     'EC2Platform',
-                     'SSMPingStatus',
-                     'SSMAgentVersion',
-                     'SSMPlatformType',
-                     'SSMPlatformName',
+    output.writerow(['Region', 'InstanceID', 'Name', 'EC2Platform', 'SSMPingStatus',
+                     'SSMAgentVersion', 'SSMPlatformType', 'SSMPlatformName',
                      'SSMPlatformVersion'])
 
     for region in get_regions():
@@ -90,8 +80,7 @@ def get_instance_name(instance):
             if tag['Key'] == 'Name':
                 instance_name = tag['Value']
     except KeyError:
-        # Instance has no tags at all
-        pass
+        pass    # Instance has no tags at all
     return instance_name
 
 def get_instance_platform(instance):
