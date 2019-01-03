@@ -24,14 +24,8 @@ def main():
                         quoting=csv.QUOTE_ALL)
 
     # Header row
-    output.writerow(['Region',
-                     'InstanceID',
-                     'Name',
-                     'EC2Platform',
-                     'SSMPingStatus',
-                     'SSMAgentVersion',
-                     'SSMPlatformType',
-                     'SSMPlatformName',
+    output.writerow(['Region', 'InstanceID', 'Name', 'EC2Platform', 'SSMPingStatus',
+                     'SSMAgentVersion', 'SSMPlatformType', 'SSMPlatformName',
                      'SSMPlatformVersion'])
 
     for region in get_regions():

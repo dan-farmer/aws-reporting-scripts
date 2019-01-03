@@ -39,22 +39,9 @@ def main():
                         quoting=csv.QUOTE_ALL)
 
     # Header row
-    output.writerow(['Account',
-                     'Region',
-                     'MW ID',
-                     'MW Name',
-                     'MW Schedule',
-                     'MW TZ',
-                     'Task 1 ID',
-                     'Patch Group',
-                     'Task',
-                     'Operation',
-                     'Baseline',
-                     'Baseline Name',
-                     'OS',
-                     'Patch Filter (MSRC Sev)',
-                     'Patch Filter (Class)',
-                     'Approval Delay'])
+    output.writerow(['Account', 'Region', 'MW ID', 'MW Name', 'MW Schedule', 'MW TZ', 'Task 1 ID',
+                     'Patch Group', 'Task', 'Operation', 'Baseline', 'Baseline Name', 'OS',
+                     'Patch Filter (MSRC Sev)', 'Patch Filter (Class)', 'Approval Delay'])
 
     #Iterate through regions and Maintenance Windows
     for region in get_regions():
