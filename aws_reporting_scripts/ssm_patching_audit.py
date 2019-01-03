@@ -43,6 +43,9 @@ def main():
                      'Patch Group', 'Task', 'Operation', 'Baseline', 'Baseline Name', 'OS',
                      'Patch Filter (MSRC Sev)', 'Patch Filter (Class)', 'Approval Delay'])
 
+    #Get AWS account number from STS
+    account_number = boto3.client('sts').get_caller_identity()['Account']
+
     #Iterate through regions and Maintenance Windows
     for region in get_regions():
         ssm_client = boto3.client('ssm', region_name=region)
@@ -57,7 +60,7 @@ def main():
             baseline_info = get_baseline_info(ssm_client, baseline_id)
 
             #Output data
-            output.writerow([boto3.client('sts').get_caller_identity()['Account'],
+            output.writerow([account_number,
                              region,
                              maint_window_id,
                              maint_window_info['name'],
