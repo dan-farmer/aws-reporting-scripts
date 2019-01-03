@@ -47,11 +47,11 @@ def main():
                              instance['InstanceId'],
                              get_instance_name(instance),
                              get_instance_platform(instance),
-                             instance_ssm_info[0],
-                             instance_ssm_info[1],
-                             instance_ssm_info[2],
-                             instance_ssm_info[3],
-                             instance_ssm_info[4]])
+                             instance_ssm_info['ping_status'],
+                             instance_ssm_info['agent_version'],
+                             instance_ssm_info['platform_type'],
+                             instance_ssm_info['platform_name'],
+                             instance_ssm_info['platform_version']])
 
 def get_instances(ec2_client):
     """Yield EC2 instances."""
@@ -115,7 +115,11 @@ def get_instance_ssm_info(ssm_client, instance_id):
         platform_type = ssm_information[0]['PlatformType']
         platform_name = ssm_information[0]['PlatformName']
         platform_version = ssm_information[0]['PlatformVersion']
-    return ping_status, agent_version, platform_type, platform_name, platform_version
+    return {'ping_status': ping_status,
+            'agent_version': agent_version,
+            'platform_type': platform_type,
+            'platform_name': platform_name,
+            'platform_version': platform_version}
 
 if __name__ == '__main__':
     main()
