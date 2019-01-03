@@ -50,8 +50,8 @@ def main():
 
             #Gather data
             maint_window_info = get_maint_window_info(ssm_client, maint_window_id)
-            task_id = get_maint_window_task(ssm_client, maint_window_id)
-            task_info = get_task_info(ssm_client, maint_window_id, task_id)
+            task_1_id = get_maint_window_task_1(ssm_client, maint_window_id)
+            task_info = get_task_info(ssm_client, maint_window_id, task_1_id)
             patch_tag = get_target_patch_tag(ssm_client, maint_window_id, task_info['target_id'])
             baseline_id = get_baseline_id(ssm_client, patch_tag)
             baseline_info = get_baseline_info(ssm_client, baseline_id)
@@ -63,7 +63,7 @@ def main():
                              maint_window_info['name'],
                              maint_window_info['sched'],
                              maint_window_info['time_zone'],
-                             task_id,               #First returned MW Task ID
+                             task_1_id,
                              patch_tag,
                              task_info['task'],
                              task_info['operation'],
@@ -105,17 +105,17 @@ def get_maint_window_info(ssm_client, maint_window_id):
         pass     #ScheduleTimezone is not set
     return {'name': name, 'sched': sched, 'time_zone': time_zone}
 
-def get_maint_window_task(ssm_client, maint_window_id):
+def get_maint_window_task_1(ssm_client, maint_window_id):
     """Return ID of first Maintenance Window Task in Maintenance Window."""
-    task_id = ''
+    task_1_id = ''
     task_list = ssm_client.describe_maintenance_window_tasks(
         WindowId=maint_window_id,
         MaxResults=10)
     try:
-        task_id = task_list['Tasks'][0]['WindowTaskId']
+        task_1_id = task_list['Tasks'][0]['WindowTaskId']
     except IndexError:
         pass    #No Task exists for this Maintenance Window
-    return task_id
+    return task_1_id
 
 def get_task_info(ssm_client, maint_window_id, task_id):
     """Return Target ID, Task and Operation of Maintenance Window Task."""
