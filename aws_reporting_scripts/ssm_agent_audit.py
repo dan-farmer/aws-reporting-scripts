@@ -80,8 +80,7 @@ def get_instance_name(instance):
             if tag['Key'] == 'Name':
                 instance_name = tag['Value']
     except KeyError:
-        # Instance has no tags at all
-        pass
+        pass    # Instance has no tags at all
     return instance_name
 
 def get_instance_platform(instance):
