@@ -30,8 +30,11 @@ def main():
     output = csv.writer(sys.stdout, delimiter=',', quotechar='"',
                         quoting=csv.QUOTE_ALL)
 
+    # Get AWS account number from STS
+    account_number = boto3.client('sts').get_caller_identity()['Account']
+
     # Header row
-    output.writerow(['Region', 'InstanceID', 'Name', 'EC2Platform', 'SSMPingStatus',
+    output.writerow(['Account', 'Region', 'InstanceID', 'Name', 'EC2Platform', 'SSMPingStatus',
                      'SSMAgentVersion', 'SSMPlatformType', 'SSMPlatformName',
                      'SSMPlatformVersion'])
 
@@ -40,7 +43,8 @@ def main():
         ssm_client = boto3.client('ssm', region_name=region)
         for instance in get_instances(ec2_client):
             instance_ssm_info = get_instance_ssm_info(ssm_client, instance['InstanceId'])
-            output.writerow([region,
+            output.writerow([account_number,
+                             region,
                              instance['InstanceId'],
                              get_instance_name(instance),
                              get_instance_platform(instance),

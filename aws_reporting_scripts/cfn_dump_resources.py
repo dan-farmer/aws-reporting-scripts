@@ -29,8 +29,11 @@ def main():
 
     output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
 
+    # Get AWS account number from STS
+    account_number = boto3.client('sts').get_caller_identity()['Account']
+
     # Header row
-    output.writerow(['Region', 'StackName', 'LogicalResourceId', 'ResourceType',
+    output.writerow(['Account', 'Region', 'StackName', 'LogicalResourceId', 'ResourceType',
                      'PhysicalResourceId', 'StackID', 'StackStatus'])
 
     for region in region_list:
@@ -44,7 +47,8 @@ def main():
                     # corresponding physical resource does not exist and has been deleted outside
                     # of CloudFormation
                     physical_resource_id = "[Deleted]"
-                output.writerow([region,
+                output.writerow([account_number,
+                                 region,
                                  stack['StackName'],
                                  resource['LogicalResourceId'],
                                  resource['ResourceType'],
