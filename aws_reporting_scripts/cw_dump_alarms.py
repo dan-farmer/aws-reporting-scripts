@@ -54,8 +54,21 @@ def main():
     for region in region_list:
         cw_client = boto3.client('cloudwatch', region_name=region)
         for alarm in get_alarms(cw_client):
+            # Join Name and Value for each dimension with '='
+            # Then join each dimension pair comma-separated
+            dimensions = ','.join(['{}={}'.format(dimension['Name'], dimension['Value'])
+                                   for dimension in alarm['Dimensions']])
             output.writerow([account_number,
-                             region])
+                             region,
+                             alarm['AlarmName'],
+                             alarm.get('AlarmDescription', ''),
+                             alarm['MetricName'],
+                             pretty_statistic(alarm['Statistic']),
+                             pretty_operator(alarm['ComparisonOperator']),
+                             alarm['Threshold'],
+                             alarm['EvaluationPeriods'],
+                             alarm['Period'],
+                             dimensions])
 
 def parse_args():
     """Create arguments and populate variables from args.
@@ -68,6 +81,33 @@ def parse_args():
 
 def get_alarms(cw_client):
     """Yield CloudWatch Alarms."""
+    next_token = True
+    while next_token:
+        if next_token is not True:
+            alarm_list = cw_client.describe_alarms(NextToken=next_token)
+        else:
+            alarm_list = cw_client.describe_alarms()
+        if 'NextToken' in alarm_list:
+            next_token = alarm_list['NextToken']
+        else:
+            next_token = False
+        for alarm in alarm_list['MetricAlarms']:
+            yield alarm
+
+def pretty_statistic(stat):
+    """Return a pretty/abbreviated version of statistic."""
+    translation = {"Average": "avg",
+                   "Maximum": "max",
+                   "Minimum": "min"}
+    return translation[stat]
+
+def pretty_operator(operator):
+    """Return a pretty/abbreviated version of operator."""
+    translation = {"GreaterThanOrEqualToThreshold": ">=",
+                   "GreaterThanThreshold": ">",
+                   "LessThanOrEqualToThreshold": "<=",
+                   "LessThanThreshold": "<"}
+    return translation[operator]
 
 def get_topic_name(sns_client, topic):
     """Return DisplayName of SNS topic."""
