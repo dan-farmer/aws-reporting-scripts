@@ -7,18 +7,25 @@
 """List EC2 instances, SSM agent and platform details as CSV."""
 
 import sys
+import argparse
 import csv
 import boto3
-from helpers import get_regions
+import helpers
 
 def main():
     """Gather and write CSV data, one row per Instance.
 
-    Iterate through available AWS regions
+    Iterate through specified AWS regions
     Iterate through all EC2 instances
     Query basic EC2 instance information (Name tag, EC2 platform)
     Query SSM agent version, status, platform information
     """
+    args = parse_args()
+    if args.region == 'all' or args.region == 'ALL':
+        region_list = list(helpers.get_region_list())
+    else:
+        # Check valid or return default region
+        region_list = [helpers.get_region(args.region)]
 
     output = csv.writer(sys.stdout, delimiter=',', quotechar='"',
                         quoting=csv.QUOTE_ALL)
@@ -28,7 +35,7 @@ def main():
                      'SSMAgentVersion', 'SSMPlatformType', 'SSMPlatformName',
                      'SSMPlatformVersion'])
 
-    for region in get_regions():
+    for region in region_list:
         ec2_client = boto3.client('ec2', region_name=region)
         ssm_client = boto3.client('ssm', region_name=region)
         for instance in get_instances(ec2_client):
@@ -42,6 +49,15 @@ def main():
                              instance_ssm_info['platform_type'],
                              instance_ssm_info['platform_name'],
                              instance_ssm_info['platform_version']])
+
+def parse_args():
+    """Create arguments and populate variables from args.
+
+    Return args namespace"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--region', type=str, default=False,
+                        help='AWS region; Use "all" for all regions')
+    return parser.parse_args()
 
 def get_instances(ec2_client):
     """Yield EC2 instances."""
