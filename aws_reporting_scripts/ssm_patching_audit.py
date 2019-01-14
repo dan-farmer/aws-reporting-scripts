@@ -22,18 +22,25 @@ List SSM Maintenance Windows, Tasks and Patching Baseline details.
 """
 
 import sys
+import argparse
 import csv
 import boto3
-from helpers import get_regions
+import helpers
 
 def main():
     """Gather and write CSV data, one row per Maintenance Window.
 
-    Iterate through available AWS regions
+    Iterate through specified AWS regions
     Iterate through all SSM Maintenance Windows
     Query for first Maintenance Window Task
     Query for associated Task, Patch Group and Patch Baseline details
     """
+    args = parse_args()
+    if args.region == 'all' or args.region == 'ALL':
+        region_list = list(helpers.get_region_list())
+    else:
+        # Check valid or return default region
+        region_list = [helpers.get_region(args.region)]
 
     output = csv.writer(sys.stdout, delimiter=',', quotechar='"',
                         quoting=csv.QUOTE_ALL)
@@ -47,7 +54,7 @@ def main():
     account_number = boto3.client('sts').get_caller_identity()['Account']
 
     # Iterate through regions and Maintenance Windows
-    for region in get_regions():
+    for region in region_list:
         ssm_client = boto3.client('ssm', region_name=region)
         for maint_window_id in get_maintenance_windows(ssm_client):
 
@@ -76,6 +83,15 @@ def main():
                              baseline_info['filter_msrc_sev'],
                              baseline_info['filter_class'],
                              baseline_info['delay']])
+
+def parse_args():
+    """Create arguments and populate variables from args.
+
+    Return args namespace"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--region', type=str, default=False,
+                        help='AWS region; Use "all" for all regions')
+    return parser.parse_args()
 
 def get_maintenance_windows(ssm_client):
     """Yield SSM Maintenance Windows."""

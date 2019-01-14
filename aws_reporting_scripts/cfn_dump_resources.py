@@ -8,17 +8,24 @@
 
 import sys
 import csv
+import argparse
 import boto3
-from helpers import get_regions
+import helpers
 
 def main():
     """Gather and write CSV data, one row per Resource.
 
-    Iterate through available AWS regions
+    Iterate through specified AWS regions
     Iterate through all CloudFormation stacks
     Iterate through all resources
     Query basic stack and resource information
     """
+    args = parse_args()
+    if args.region == 'all' or args.region == 'ALL':
+        region_list = list(helpers.get_region_list())
+    else:
+        # Check valid or return default region
+        region_list = [helpers.get_region(args.region)]
 
     output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
 
@@ -26,7 +33,7 @@ def main():
     output.writerow(['Region', 'StackName', 'LogicalResourceId', 'ResourceType',
                      'PhysicalResourceId', 'StackID', 'StackStatus'])
 
-    for region in get_regions():
+    for region in region_list:
         cfn_client = boto3.client('cloudformation', region_name=region)
         for stack in get_stacks(cfn_client):
             for resource in get_resources(cfn_client, stack['StackId']):
@@ -44,6 +51,15 @@ def main():
                                  physical_resource_id,
                                  stack['StackId'],
                                  stack['StackStatus']])
+
+def parse_args():
+    """Create arguments and populate variables from args.
+
+    Return args namespace"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--region', type=str, default=False,
+                        help='AWS region; Use "all" for all regions')
+    return parser.parse_args()
 
 def get_stacks(cfn_client):
     """Yield all CloudFormation stacks."""

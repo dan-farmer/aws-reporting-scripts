@@ -10,7 +10,27 @@ import sys
 import boto3
 import botocore.exceptions
 
-def get_regions():
+def get_region(proposed_region):
+    """Check if passed region is valid/available, or use user's default region.
+
+    Return region name"""
+    if proposed_region:
+        # If proposed region is present, check it against available regions
+        if proposed_region in get_region_list():
+            region = proposed_region
+        else:
+            raise Exception('Could not find region {0} in list of available regions'.format(
+                proposed_region))
+    else:
+        # If proposed region is False, try to establish the user's default region
+        try:
+            session = boto3.session.Session()
+            region = session.region_name
+        except:
+            raise Exception('Could not establish region. Specify -r or configure AWS_CREDENTIALS')
+    return region
+
+def get_region_list():
     """Return list of AWS regions."""
     try:
         ec2_client = boto3.client('ec2')
