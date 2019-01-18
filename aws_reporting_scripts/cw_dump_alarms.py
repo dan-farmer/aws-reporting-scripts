@@ -129,7 +129,11 @@ def pretty_statistic(stat):
     translation = {"Average": "avg",
                    "Maximum": "max",
                    "Minimum": "min"}
-    return translation[stat]
+    try:
+        stat = translation[stat]
+    except KeyError:
+        pass
+    return stat
 
 def pretty_operator(operator):
     """Return a pretty/abbreviated version of operator."""
@@ -137,7 +141,11 @@ def pretty_operator(operator):
                    "GreaterThanThreshold": ">",
                    "LessThanOrEqualToThreshold": "<=",
                    "LessThanThreshold": "<"}
-    return translation[operator]
+    try:
+        operator = translation[operator]
+    except KeyError:
+        pass
+    return operator
 
 def get_topic_name(sns_client, topic):
     """Return DisplayName of SNS topic."""
