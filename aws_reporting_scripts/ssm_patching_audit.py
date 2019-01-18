@@ -56,20 +56,24 @@ def main():
     # Iterate through regions and Maintenance Windows
     for region in region_list:
         ssm_client = boto3.client('ssm', region_name=region)
-        for maint_window_id in get_maintenance_windows(ssm_client):
-
+        mw_enabled_filter = {'Key':'Enabled', 'Values':['true']}
+        for maint_window in helpers.get_items(client=ssm_client,
+                                              function='describe_maintenance_windows',
+                                              item_name='WindowIdentities',
+                                              Filters=[mw_enabled_filter]):
             # Gather data
-            maint_window_info = get_maint_window_info(ssm_client, maint_window_id)
-            task_1_id = get_maint_window_task_1(ssm_client, maint_window_id)
-            task_info = get_task_info(ssm_client, maint_window_id, task_1_id)
-            patch_tag = get_target_patch_tag(ssm_client, maint_window_id, task_info['target_id'])
+            maint_window_info = get_maint_window_info(ssm_client, maint_window['WindowId'])
+            task_1_id = get_maint_window_task_1(ssm_client, maint_window['WindowId'])
+            task_info = get_task_info(ssm_client, maint_window['WindowId'], task_1_id)
+            patch_tag = get_target_patch_tag(ssm_client, maint_window['WindowId'],
+                                             task_info['target_id'])
             baseline_id = get_baseline_id(ssm_client, patch_tag)
             baseline_info = get_baseline_info(ssm_client, baseline_id)
 
             # Output data
             output.writerow([account_number,
                              region,
-                             maint_window_id,
+                             maint_window['WindowId'],
                              maint_window_info['name'],
                              maint_window_info['sched'],
                              maint_window_info['time_zone'],
@@ -92,25 +96,6 @@ def parse_args():
     parser.add_argument('-r', '--region', type=str, default=False,
                         help='AWS region; Use "all" for all regions')
     return parser.parse_args()
-
-def get_maintenance_windows(ssm_client):
-    """Yield SSM Maintenance Windows."""
-    next_token = True
-    filters = {'Key':'Enabled', 'Values':['true']}
-    while next_token:
-        if next_token is not True:
-            maint_window_list = ssm_client.describe_maintenance_windows(
-                Filters=[filters],
-                NextToken=next_token)
-        else:
-            maint_window_list = ssm_client.describe_maintenance_windows(
-                Filters=[filters])
-        if 'NextToken' in maint_window_list:
-            next_token = maint_window_list['NextToken']
-        else:
-            next_token = False
-        for window in maint_window_list['WindowIdentities']:
-            yield window['WindowId']
 
 def get_maint_window_info(ssm_client, maint_window_id):
     """Return basic parameters of Maintenance Window."""

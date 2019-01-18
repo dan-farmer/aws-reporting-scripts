@@ -41,18 +41,33 @@ def main():
     for region in region_list:
         ec2_client = boto3.client('ec2', region_name=region)
         ssm_client = boto3.client('ssm', region_name=region)
-        for instance in get_instances(ec2_client):
-            instance_ssm_info = get_instance_ssm_info(ssm_client, instance['InstanceId'])
-            output.writerow([account_number,
-                             region,
-                             instance['InstanceId'],
-                             get_instance_name(instance),
-                             get_instance_platform(instance),
-                             instance_ssm_info['ping_status'],
-                             instance_ssm_info['agent_version'],
-                             instance_ssm_info['platform_type'],
-                             instance_ssm_info['platform_name'],
-                             instance_ssm_info['platform_version']])
+        instance_state_filter = {
+            'Name': 'instance-state-name',
+            'Values': [
+                #'pending',
+                'running',
+                #'shutting-down',
+                #'terminated',
+                'stopping',
+                'stopped',
+            ]
+        }
+        for reservation in helpers.get_items(client=ec2_client,
+                                             function='describe_instances',
+                                             item_name='Reservations',
+                                             Filters=[instance_state_filter]):
+            for instance in reservation['Instances']:
+                instance_ssm_info = get_instance_ssm_info(ssm_client, instance['InstanceId'])
+                output.writerow([account_number,
+                                 region,
+                                 instance['InstanceId'],
+                                 get_instance_name(instance),
+                                 get_instance_platform(instance),
+                                 instance_ssm_info['ping_status'],
+                                 instance_ssm_info['agent_version'],
+                                 instance_ssm_info['platform_type'],
+                                 instance_ssm_info['platform_name'],
+                                 instance_ssm_info['platform_version']])
 
 def parse_args():
     """Create arguments and populate variables from args.
@@ -62,33 +77,6 @@ def parse_args():
     parser.add_argument('-r', '--region', type=str, default=False,
                         help='AWS region; Use "all" for all regions')
     return parser.parse_args()
-
-def get_instances(ec2_client):
-    """Yield EC2 instances."""
-    next_token = True
-    filters = {
-        'Name': 'instance-state-name',
-        'Values': [
-            #'pending',
-            'running',
-            #'shutting-down',
-            #'terminated',
-            'stopping',
-            'stopped',
-        ]
-    }
-    while next_token:
-        if next_token is not True:
-            instance_list = ec2_client.describe_instances(Filters=[filters], NextToken=next_token)
-        else:
-            instance_list = ec2_client.describe_instances(Filters=[filters])
-        if 'NextToken' in instance_list:
-            next_token = instance_list['NextToken']
-        else:
-            next_token = False
-        for reservation in instance_list['Reservations']:
-            for instance in reservation['Instances']:
-                yield instance
 
 def get_instance_name(instance):
     """Return instance 'Name' tag value if it exists."""
