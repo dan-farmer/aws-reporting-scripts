@@ -53,7 +53,9 @@ def main():
     # Iterate through regions and Alarms
     for region in region_list:
         cw_client = boto3.client('cloudwatch', region_name=region)
-        for alarm in get_alarms(cw_client):
+        for alarm in helpers.get_items(client=cw_client,
+                                       function='describe_alarms',
+                                       item_name='MetricAlarms'):
             # Join Name and Value for each dimension with '='
             # Then join each dimension pair comma-separated
             dimensions = ','.join(['{}={}'.format(dimension['Name'], dimension['Value'])
@@ -81,12 +83,18 @@ def main():
                     action0_sns_subscriptions = ','.join(
                         ['{}: {}'.format(subscription['Protocol'],
                                          subscription['Endpoint'])
-                         for subscription in get_topic_subs(sns_client, action0)])
+                         for subscription in helpers.get_items(client=sns_client,
+                                                               function='list_subscriptions_by_topic',
+                                                               item_name='Subscriptions',
+                                                               TopicArn=action0)])
                 if "arn:aws:sns" in action1:
                     action0_sns_subscriptions = ','.join(
                         ['{}: {}'.format(subscription['Protocol'],
                                          subscription['Endpoint'])
-                         for subscription in get_topic_subs(sns_client, action1)])
+                         for subscription in helpers.get_items(client=sns_client,
+                                                               function='list_subscriptions_by_topic',
+                                                               item_name='Subscriptions',
+                                                               TopicArn=action0)])
 
             # Output data
             output.writerow([account_number,
@@ -116,21 +124,6 @@ def parse_args():
                         help='AWS region; Use "all" for all regions')
     return parser.parse_args()
 
-def get_alarms(cw_client):
-    """Yield CloudWatch Alarms."""
-    next_token = True
-    while next_token:
-        if next_token is not True:
-            alarm_list = cw_client.describe_alarms(NextToken=next_token)
-        else:
-            alarm_list = cw_client.describe_alarms()
-        if 'NextToken' in alarm_list:
-            next_token = alarm_list['NextToken']
-        else:
-            next_token = False
-        for alarm in alarm_list['MetricAlarms']:
-            yield alarm
-
 def pretty_statistic(stat):
     """Return a pretty/abbreviated version of statistic."""
     translation = {"Average": "avg",
@@ -155,22 +148,6 @@ def get_topic_name(sns_client, topic):
     except KeyError:
         pass # No DisplayName
     return displayname
-
-def get_topic_subs(sns_client, topic):
-    """Yield scriptions for SNS topic."""
-    next_token = True
-    while next_token:
-        if next_token is not True:
-            subscription_list = sns_client.list_subscriptions_by_topic(TopicArn=topic,
-                                                                       NextToken=next_token)
-        else:
-            subscription_list = sns_client.list_subscriptions_by_topic(TopicArn=topic)
-        if 'NextToken' in subscription_list:
-            next_token = subscription_list['NextToken']
-        else:
-            next_token = False
-        for subscription in subscription_list['Subscriptions']:
-            yield subscription
 
 if __name__ == '__main__':
     main()
