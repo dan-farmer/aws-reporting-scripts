@@ -79,6 +79,11 @@ def main():
                 # Join proto and endpoint for each subscription ': '
                 # Then join each subscription pair comman-separated
                 if "arn:aws:sns" in action0:
+                    try:
+                        sns_client.get_topic_attributes(TopicArn=action0)
+                    except sns_client.exceptions.NotFoundException:
+                        # Topic does not exist or cannot be listed
+                        break
                     action0_sns_displayname = get_topic_name(sns_client, action0)
                     action0_sns_subscriptions = ','.join(
                         ['{}: {}'.format(subscription['Protocol'],
@@ -88,13 +93,19 @@ def main():
                                                                item_name='Subscriptions',
                                                                TopicArn=action0)])
                 if "arn:aws:sns" in action1:
-                    action0_sns_subscriptions = ','.join(
+                    try:
+                        sns_client.get_topic_attributes(TopicArn=action1)
+                    except sns_client.exceptions.NotFoundException:
+                        # Topic does not exist or cannot be listed
+                        break
+                    action1_sns_displayname = get_topic_name(sns_client, action1)
+                    action1_sns_subscriptions = ','.join(
                         ['{}: {}'.format(subscription['Protocol'],
                                          subscription['Endpoint'])
                          for subscription in helpers.get_items(client=sns_client,
                                                                function='list_subscriptions_by_topic',
                                                                item_name='Subscriptions',
-                                                               TopicArn=action0)])
+                                                               TopicArn=action1)])
 
             # Output data
             output.writerow([account_number,
