@@ -174,8 +174,8 @@ def get_baseline_info(ssm_client, baseline_id):
         operating_system = baseline['OperatingSystem']
         patch_filters = (baseline['ApprovalRules']['PatchRules']
                          [0]['PatchFilterGroup']['PatchFilters'])
-        filter_msrc_sev = next(item for item in patch_filters
-                               if item['Key'] == 'MSRC_SEVERITY')['Values'][0]
+        filter_msrc_sev = ",".join(next(item for item in patch_filters
+                                        if item['Key'] == 'MSRC_SEVERITY')['Values'])
         filter_class = ",".join(next(item for item in patch_filters
                                      if item['Key'] == 'CLASSIFICATION')['Values'])
         delay = baseline['ApprovalRules']['PatchRules'][0]['ApproveAfterDays']
